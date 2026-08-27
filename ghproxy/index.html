@@ -441,8 +441,6 @@
 				name="q"
 				placeholder="粘贴 GitHub 文件或 API 链接…"
 				aria-label="GitHub 链接输入框"
-				pattern="^((https|http)://)?(github.com/.+?/.+?/(?:releases|archive|blob|raw|tags|info|git-.+)|((?:raw|gist|api).(?:githubusercontent|github).com))/.+$"
-				required
 				autocomplete="off"
 				spellcheck="false"
 			>
@@ -505,12 +503,31 @@
 	</main>
 
 	<script>
+		// 支持的 GitHub URL 校验（与 worker.js checkUrl 对齐）
+		const SUPPORTED_URL = /^(?:https?:\/\/)?(?:github\.com\/.+?\/.+?\/(?:releases|archive|blob|raw|tags|info|git-).*|raw\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+?\/.+|gist\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+|api\.github\.com\/.*)$/i;
+
 		function toSubmit(e) {
 			e.preventDefault();
 			const input = document.getElementsByName('q')[0];
-			const baseUrl = location.href.substring(0, location.href.lastIndexOf('/') + 1);
-			// 用 q 参数传递链接，避免路径中的 // 被 Cloudflare 合并成 /
-			window.open(baseUrl + '?q=' + encodeURIComponent(input.value));
+			let value = (input.value || '').trim();
+			if (!value) {
+				alert('请输入 GitHub 链接');
+				input.focus();
+				return;
+			}
+			// 规范化：协议相对 // 开头 → https://；无协议 → https://
+			if (value.startsWith('//')) value = 'https:' + value;
+			else if (!/^https?:\/\//i.test(value)) value = 'https://' + value;
+			// 合并路径中多余斜杠（保留协议头）
+			value = value.replace(/^([a-z]+:\/\/)(.*)$/i, (m, proto, rest) => proto + rest.replace(/\/{2,}/g, '/'));
+			// 校验为合法 GitHub 链接
+			if (!SUPPORTED_URL.test(value)) {
+				alert('暂不支持的链接格式，请粘贴 release / archive / blob / raw / gist / api 链接');
+				input.focus();
+				return;
+			}
+			// 用相对 url 参数传递链接，避免路径中的 // 被 CF 合并
+			window.open('?url=' + encodeURIComponent(value));
 		}
 	</script>
 </body>
