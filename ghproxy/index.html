@@ -508,8 +508,9 @@
 		function toSubmit(e) {
 			e.preventDefault();
 			const input = document.getElementsByName('q')[0];
-			const baseUrl = location.href.substr(0, location.href.lastIndexOf('/') + 1);
-			window.open(baseUrl + input.value);
+			const baseUrl = location.href.substring(0, location.href.lastIndexOf('/') + 1);
+			// 用 q 参数传递链接，避免路径中的 // 被 Cloudflare 合并成 /
+			window.open(baseUrl + '?q=' + encodeURIComponent(input.value));
 		}
 	</script>
 </body>
