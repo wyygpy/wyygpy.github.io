@@ -187,6 +187,9 @@
 			padding: 0 68px 0 var(--space-6);
 			font-family: var(--font-mono);
 			font-size: var(--fs-base);
+			/* 禁用字体连字/上下文替代，避免连续斜杠 // 被字体特性合并或替换 */
+			font-variant-ligatures: none;
+			font-feature-settings: "liga" 0, "calt" 0, "dlig" 0;
 			color: var(--text-primary);
 			background: var(--surface-glass);
 			border: 1px solid var(--border-strong);
