@@ -417,9 +417,13 @@
 			}
 		}
 
+		const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 		function loop(t) {
 			draw(t);
-			requestAnimationFrame(loop);
+			if (!prefersReducedMotion) {
+				requestAnimationFrame(loop);
+			}
 		}
 
 		/* ---------- 事件 ---------- */
@@ -427,7 +431,7 @@
 		window.addEventListener("mousemove", function (e) {
 			mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true;
 		});
-		window.addEventListener("mouseout", function () { mouse.active = false; });
+		window.addEventListener("mouseleave", function () { mouse.active = false; });
 		window.addEventListener("touchmove", function (e) {
 			if (e.touches[0]) {
 				mouse.x = e.touches[0].clientX;
@@ -440,7 +444,11 @@
 		/* ---------- 启动 ---------- */
 		resize();
 		initNodes();
-		requestAnimationFrame(loop);
+		if (prefersReducedMotion) {
+			draw(0); // 减少动态效果偏好：仅渲染静态一帧
+		} else {
+			requestAnimationFrame(loop);
+		}
 	})();
 	</script>
 </body>
