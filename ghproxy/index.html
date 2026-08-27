@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<title>GitHub 文件加速</title>
+	<meta charset="UTF-8">
+	<link rel="shortcut icon" href="favicon.ico">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="GitHub 文件及 API 加速服务，基于 Cloudflare Workers，支持 release、archive、raw、gist、api 链接加速。">
+	<style>
+		/* ============================================================
+		   Design Tokens — 深色玻璃拟态设计系统
+		   ============================================================ */
+		:root {
+			/* 色彩 —— 表面层 */
+			--bg-base: #0a0d14;
+			--bg-elevated: #0d1117;
+			--surface-glass: rgba(22, 27, 38, 0.55);
+			--surface-glass-strong: rgba(22, 27, 38, 0.78);
+			--border-subtle: rgba(255, 255, 255, 0.08);
+			--border-strong: rgba(255, 255, 255, 0.14);
+
+			/* 色彩 —— 文本 */
+			--text-primary: #f0f6fc;
+			--text-secondary: #c9d1d9;
+			--text-muted: #8b949e;
+			--text-faint: #6e7681;
+
+			/* 色彩 —— 强调 */
+			--accent: #58a6ff;
+			--accent-hover: #79b8ff;
+			--accent-glow: rgba(88, 166, 255, 0.18);
+			--accent-soft: rgba(88, 166, 255, 0.12);
+
+			/* 语义色 */
+			--success: #3fb950;
+			--warning: #d29922;
+			--danger: #f85149;
+			--info: #58a6ff;
+
+			/* 字体 */
+			--font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+				Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+			--font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
+
+			/* 字号刻度 */
+			--fs-xs: 0.75rem;
+			--fs-sm: 0.875rem;
+			--fs-base: 1rem;
+			--fs-lg: 1.125rem;
+			--fs-xl: 1.375rem;
+			--fs-2xl: 1.75rem;
+			--fs-3xl: 2.5rem;
+
+			/* 间距（8px 基准） */
+			--space-1: 0.25rem;
+			--space-2: 0.5rem;
+			--space-3: 0.75rem;
+			--space-4: 1rem;
+			--space-5: 1.25rem;
+			--space-6: 1.5rem;
+			--space-8: 2rem;
+			--space-10: 2.5rem;
+			--space-12: 3rem;
+
+			/* 圆角 */
+			--radius-sm: 8px;
+			--radius-md: 12px;
+			--radius-lg: 16px;
+			--radius-pill: 999px;
+
+			/* 阴影 */
+			--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+			--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+			--shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45);
+			--shadow-glow: 0 0 0 4px var(--accent-glow);
+
+			/* 过渡 */
+			--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+			--transition-fast: 160ms var(--ease-out);
+			--transition-base: 280ms var(--ease-out);
+		}
+
+		/* ============================================================
+		   基础重置
+		   ============================================================ */
+		*, *::before, *::after {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		html { -webkit-text-size-adjust: 100%; }
+
+		body {
+			font-family: var(--font-sans);
+			font-size: var(--fs-base);
+			line-height: 1.6;
+			color: var(--text-primary);
+			min-height: 100vh;
+			background-color: var(--bg-base);
+			background-image:
+				radial-gradient(ellipse 80% 60% at 20% 0%, rgba(88, 166, 255, 0.10), transparent 60%),
+				radial-gradient(ellipse 70% 50% at 85% 15%, rgba(163, 113, 247, 0.08), transparent 55%),
+				radial-gradient(ellipse 90% 70% at 50% 100%, rgba(63, 185, 80, 0.05), transparent 60%);
+			background-attachment: fixed;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: var(--space-8) var(--space-4) var(--space-6);
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+		}
+
+		/* ============================================================
+		   布局容器
+		   ============================================================ */
+		.container {
+			width: 100%;
+			max-width: 760px;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-8);
+			flex: 1;
+		}
+
+		/* ============================================================
+		   Hero 区域
+		   ============================================================ */
+		.hero {
+			text-align: center;
+			padding-top: var(--space-6);
+		}
+
+		.logo {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 88px;
+			height: 88px;
+			margin-bottom: var(--space-6);
+			border-radius: var(--radius-lg);
+			background: var(--surface-glass);
+			border: 1px solid var(--border-subtle);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+			transition: transform var(--transition-base), box-shadow var(--transition-base);
+		}
+
+		.logo:hover {
+			transform: translateY(-3px) scale(1.03);
+			box-shadow: var(--shadow-lg), 0 0 32px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+		}
+
+		.logo svg { width: 52px; height: 52px; }
+
+		.title {
+			font-size: var(--fs-3xl);
+			font-weight: 700;
+			letter-spacing: -0.02em;
+			line-height: 1.15;
+			background: linear-gradient(135deg, #ffffff 0%, #c9d1d9 60%, #8b949e 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+			margin-bottom: var(--space-3);
+		}
+
+		.subtitle {
+			font-size: var(--fs-base);
+			color: var(--text-muted);
+			font-weight: 400;
+		}
+
+		/* ============================================================
+		   搜索表单
+		   ============================================================ */
+		.search-container {
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+
+		.search-input {
+			width: 100%;
+			height: 60px;
+			padding: 0 68px 0 var(--space-6);
+			font-family: var(--font-mono);
+			font-size: var(--fs-base);
+			color: var(--text-primary);
+			background: var(--surface-glass);
+			border: 1px solid var(--border-strong);
+			border-radius: var(--radius-pill);
+			backdrop-filter: blur(16px);
+			-webkit-backdrop-filter: blur(16px);
+			box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+			transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+		}
+
+		.search-input::placeholder {
+			color: var(--text-faint);
+			font-family: var(--font-sans);
+		}
+
+		.search-input:hover {
+			border-color: rgba(255, 255, 255, 0.22);
+		}
+
+		.search-input:focus {
+			outline: none;
+			border-color: var(--accent);
+			background: var(--surface-glass-strong);
+			box-shadow: var(--shadow-glow), var(--shadow-md);
+		}
+
+		.search-button {
+			position: absolute;
+			right: var(--space-2);
+			top: 50%;
+			transform: translateY(-50%);
+			width: 48px;
+			height: 48px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			border: none;
+			border-radius: var(--radius-pill);
+			background: linear-gradient(135deg, var(--accent), #4080ff);
+			color: #fff;
+			cursor: pointer;
+			box-shadow: 0 4px 14px var(--accent-glow);
+			transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+		}
+
+		.search-button:hover {
+			transform: translateY(-50%) scale(1.06);
+			filter: brightness(1.1);
+			box-shadow: 0 6px 22px var(--accent-glow);
+		}
+
+		.search-button:active {
+			transform: translateY(-50%) scale(0.96);
+		}
+
+		.search-button:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 3px;
+		}
+
+		/* ============================================================
+           提示信息卡片
+           ============================================================ */
+		.tips {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3);
+		}
+
+		.tip {
+			display: flex;
+			align-items: flex-start;
+			gap: var(--space-3);
+			padding: var(--space-4) var(--space-5);
+			background: var(--surface-glass);
+			border: 1px solid var(--border-subtle);
+			border-left: 3px solid var(--accent);
+			border-radius: var(--radius-md);
+			backdrop-filter: blur(10px);
+			-webkit-backdrop-filter: blur(10px);
+			color: var(--text-secondary);
+			font-size: var(--fs-sm);
+			line-height: 1.65;
+		}
+
+		.tip--success { border-left-color: var(--success); }
+		.tip--warning { border-left-color: var(--warning); }
+		.tip--info    { border-left-color: var(--info); }
+
+		.tip-icon {
+			flex-shrink: 0;
+			font-size: 1rem;
+			line-height: 1.65;
+		}
+
+		.tip a {
+			color: var(--accent);
+			text-decoration: none;
+			border-bottom: 1px dashed rgba(88, 166, 255, 0.4);
+			transition: color var(--transition-fast), border-color var(--transition-fast);
+		}
+
+		.tip a:hover {
+			color: var(--accent-hover);
+			border-bottom-color: var(--accent-hover);
+		}
+
+		/* ============================================================
+           示例面板
+           ============================================================ */
+		.example {
+			padding: var(--space-6);
+			background: var(--surface-glass);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-lg);
+			backdrop-filter: blur(14px);
+			-webkit-backdrop-filter: blur(14px);
+			box-shadow: var(--shadow-sm);
+		}
+
+		.example-title {
+			display: flex;
+			align-items: center;
+			gap: var(--space-2);
+			font-size: var(--fs-sm);
+			font-weight: 600;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			margin-bottom: var(--space-5);
+			padding-bottom: var(--space-4);
+			border-bottom: 1px solid var(--border-subtle);
+		}
+
+		.example-title .dot {
+			width: 6px;
+			height: 6px;
+			border-radius: 50%;
+			background: var(--accent);
+			box-shadow: 0 0 8px var(--accent-glow);
+		}
+
+		.example-list {
+			list-style: none;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3);
+		}
+
+		.example-item {
+			display: flex;
+			align-items: baseline;
+			gap: var(--space-3);
+			font-family: var(--font-mono);
+			font-size: var(--fs-sm);
+			color: var(--text-secondary);
+			line-height: 1.5;
+			word-break: break-all;
+			overflow-wrap: break-word;
+		}
+
+		.example-tag {
+			flex-shrink: 0;
+			font-family: var(--font-sans);
+			font-size: var(--fs-xs);
+			font-weight: 500;
+			color: var(--text-muted);
+			min-width: 84px;
+			padding: 2px var(--space-2);
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-sm);
+			text-align: center;
+		}
+
+		.example-link {
+			color: var(--text-secondary);
+			word-break: break-all;
+		}
+
+		/* ============================================================
+           响应式
+           ============================================================ */
+		@media (max-width: 640px) {
+			body { padding: var(--space-6) var(--space-4); }
+
+			.container { gap: var(--space-6); }
+
+			.title { font-size: var(--fs-2xl); }
+
+			.search-input {
+				height: 54px;
+				font-size: var(--fs-sm);
+				padding: 0 60px 0 var(--space-4);
+			}
+
+			.search-button { width: 42px; height: 42px; }
+
+			.example { padding: var(--space-4); }
+
+			.example-item {
+				flex-direction: column;
+				gap: var(--space-2);
+				align-items: flex-start;
+			}
+
+			.example-tag { min-width: auto; align-self: flex-start; }
+		}
+
+		/* ============================================================
+           动效偏好
+           ============================================================ */
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after {
+				animation-duration: 0.01ms !important;
+				transition-duration: 0.01ms !important;
+			}
+		}
+
+		/* 入场动画 */
+		@keyframes fadeUp {
+			from { opacity: 0; transform: translateY(16px); }
+			to   { opacity: 1; transform: translateY(0); }
+		}
+
+		.hero, .search-container, .tips, .example {
+			animation: fadeUp 0.6s var(--ease-out) both;
+		}
+		.search-container { animation-delay: 0.08s; }
+		.tips             { animation-delay: 0.16s; }
+		.example          { animation-delay: 0.24s; }
+	</style>
+</head>
+<body>
+	<main class="container">
+		<!-- Hero -->
+		<header class="hero">
+			<a class="logo" href="https://github.com" target="_blank" rel="noopener" aria-label="GitHub">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 98 96" fill="#ffffff" aria-hidden="true">
+					<path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
+				</svg>
+			</a>
+			<h1 class="title">GitHub 文件加速</h1>
+			<p class="subtitle">基于 Cloudflare Workers · release / archive / raw / gist / api 全链路加速</p>
+		</header>
+
+		<!-- 搜索表单 -->
+		<form onsubmit="toSubmit(event)" class="search-container" role="search">
+			<input
+				type="text"
+				class="search-input"
+				name="q"
+				placeholder="粘贴 GitHub 文件或 API 链接…"
+				aria-label="GitHub 链接输入框"
+				pattern="^((https|http)://)?(github.com/.+?/.+?/(?:releases|archive|blob|raw|tags|info|git-.+)|((?:raw|gist|api).(?:githubusercontent|github).com))/.+$"
+				required
+				autocomplete="off"
+				spellcheck="false"
+			>
+			<button type="submit" class="search-button" aria-label="开始加速">
+				<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M13 5l7 7-7 7M5 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</button>
+		</form>
+
+		<!-- 提示信息 -->
+		<section class="tips" aria-label="使用提示">
+			<div class="tip tip--info">
+				<span class="tip-icon" aria-hidden="true">✨</span>
+				<span>支持带协议头 (https://) 或不带的 GitHub 链接，同时支持 API 加速。</span>
+			</div>
+			<div class="tip tip--success">
+				<span class="tip-icon" aria-hidden="true">🚀</span>
+				<span>release、archive 使用 Cloudflare 加速，文件会跳转至 JsDelivr。</span>
+			</div>
+			<div class="tip tip--warning">
+				<span class="tip-icon" aria-hidden="true">⚠️</span>
+				<span>注意：暂不支持文件夹下载。</span>
+			</div>
+		</section>
+
+		<!-- 示例 -->
+		<section class="example" aria-label="合法输入示例">
+			<div class="example-title">
+				<span class="dot" aria-hidden="true"></span>
+				合法输入示例
+			</div>
+			<ul class="example-list">
+				<li class="example-item">
+					<span class="example-tag">分支源码</span>
+					<span class="example-link">https://github.com/user/project/archive/master.zip</span>
+				</li>
+				<li class="example-item">
+					<span class="example-tag">release 源码</span>
+					<span class="example-link">https://github.com/user/project/archive/v0.1.0.tar.gz</span>
+				</li>
+				<li class="example-item">
+					<span class="example-tag">release 文件</span>
+					<span class="example-link">https://github.com/user/project/releases/download/v0.1.0/example.zip</span>
+				</li>
+				<li class="example-item">
+					<span class="example-tag">commit 文件</span>
+					<span class="example-link">https://github.com/user/project/blob/123/filename</span>
+				</li>
+				<li class="example-item">
+					<span class="example-tag">gist</span>
+					<span class="example-link">https://gist.githubusercontent.com/user/123/raw/cmd.py</span>
+				</li>
+				<li class="example-item">
+					<span class="example-tag">api</span>
+					<span class="example-link">https://api.github.com/repos/user/project</span>
+				</li>
+			</ul>
+		</section>
+	</main>
+
+	<script>
+		function toSubmit(e) {
+			e.preventDefault();
+			const input = document.getElementsByName('q')[0];
+			const baseUrl = location.href.substr(0, location.href.lastIndexOf('/') + 1);
+			window.open(baseUrl + input.value);
+		}
+	</script>
+</body>
+</html>
