@@ -3,8 +3,10 @@
 <head>
 	<title>GitHub 文件加速</title>
 	<meta charset="UTF-8">
+	<link rel="icon" href="favicon.ico">
 	<link rel="shortcut icon" href="favicon.ico">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'">
 	<meta name="description" content="GitHub 文件及 API 加速服务，基于 Cloudflare Workers，支持 release、archive、raw、gist、api 链接加速。">
 	<style>
 		/* ============================================================
@@ -28,6 +30,7 @@
 			/* 色彩 —— 强调 */
 			--accent: #58a6ff;
 			--accent-hover: #79b8ff;
+			--accent-deep: #4080ff;
 			--accent-glow: rgba(88, 166, 255, 0.18);
 			--accent-soft: rgba(88, 166, 255, 0.12);
 
@@ -50,6 +53,7 @@
 			--fs-xl: 1.375rem;
 			--fs-2xl: 1.75rem;
 			--fs-3xl: 2.5rem;
+			--fs-4xl: 3.5rem;
 
 			/* 间距（8px 基准） */
 			--space-1: 0.25rem;
@@ -228,7 +232,7 @@
 			justify-content: center;
 			border: none;
 			border-radius: var(--radius-pill);
-			background: linear-gradient(135deg, var(--accent), #4080ff);
+			background: linear-gradient(135deg, var(--accent), var(--accent-deep));
 			color: #fff;
 			cursor: pointer;
 			box-shadow: 0 4px 14px var(--accent-glow);
@@ -249,6 +253,26 @@
 			outline: 2px solid var(--accent);
 			outline-offset: 3px;
 		}
+
+		/* ============================================================
+           表单错误提示（替代 alert，避免阻断与屏幕阅读器播报不可控）
+           ============================================================ */
+		.search-group {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2);
+		}
+
+		.form-error {
+			/* 预留高度，避免错误出现/消失时布局跳动（CLS） */
+			min-height: 1.5em;
+			font-size: var(--fs-sm);
+			color: var(--danger);
+			text-align: center;
+			line-height: 1.5;
+		}
+
+		.form-error:empty { visibility: hidden; }
 
 		/* ============================================================
            提示信息卡片
@@ -374,7 +398,11 @@
            响应式
            ============================================================ */
 		@media (max-width: 640px) {
-			body { padding: var(--space-6) var(--space-4); }
+			body {
+				padding: var(--space-6) var(--space-4);
+				/* iOS 不支持 fixed 且会触发整页重绘，移动端回退为滚动 */
+				background-attachment: scroll;
+			}
 
 			.container { gap: var(--space-6); }
 
@@ -437,22 +465,26 @@
 		</header>
 
 		<!-- 搜索表单 -->
-		<form onsubmit="toSubmit(event)" class="search-container" role="search">
-			<input
-				type="text"
-				class="search-input"
-				name="q"
-				placeholder="粘贴 GitHub 文件或 API 链接…"
-				aria-label="GitHub 链接输入框"
-				autocomplete="off"
-				spellcheck="false"
-			>
-			<button type="submit" class="search-button" aria-label="开始加速">
-				<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
-					<path d="M13 5l7 7-7 7M5 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-			</button>
-		</form>
+		<div class="search-group">
+			<form id="search-form" class="search-container" role="search">
+				<input
+					type="text"
+					class="search-input"
+					name="q"
+					placeholder="粘贴 GitHub 文件或 API 链接…"
+					aria-label="GitHub 链接输入框"
+					autocomplete="off"
+					spellcheck="false"
+					aria-describedby="form-error"
+				>
+				<button type="submit" class="search-button" aria-label="开始加速">
+					<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M13 5l7 7-7 7M5 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</button>
+			</form>
+			<p class="form-error" id="form-error" role="alert" aria-live="assertive"></p>
+		</div>
 
 		<!-- 提示信息 -->
 		<section class="tips" aria-label="使用提示">
@@ -509,13 +541,21 @@
 		// 支持的 GitHub URL 校验（与 worker.js checkUrl 对齐）
 		const SUPPORTED_URL = /^(?:https?:\/\/)?(?:github\.com\/.+?\/.+?\/(?:releases|archive|blob|raw|tags|info|git-).*|raw\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+?\/.+|gist\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+|api\.github\.com\/.*)$/i;
 
-		function toSubmit(e) {
+		const form = document.getElementById('search-form');
+		const input = form.querySelector('[name=q]');
+		const errorEl = document.getElementById('form-error');
+
+		function showError(message) {
+			errorEl.textContent = message;
+			input.setAttribute('aria-invalid', 'true');
+			input.focus();
+		}
+
+		form.addEventListener('submit', function (e) {
 			e.preventDefault();
-			const input = document.getElementsByName('q')[0];
 			let value = (input.value || '').trim();
 			if (!value) {
-				alert('请输入 GitHub 链接');
-				input.focus();
+				showError('请输入 GitHub 链接');
 				return;
 			}
 			// 规范化：协议相对 // 开头 → https://；无协议 → https://
@@ -525,13 +565,20 @@
 			value = value.replace(/^([a-z]+:\/\/)(.*)$/i, (m, proto, rest) => proto + rest.replace(/\/{2,}/g, '/'));
 			// 校验为合法 GitHub 链接
 			if (!SUPPORTED_URL.test(value)) {
-				alert('暂不支持的链接格式，请粘贴 release / archive / blob / raw / gist / api 链接');
-				input.focus();
+				showError('暂不支持的链接格式，请粘贴 release / archive / blob / raw / gist / api 链接');
 				return;
 			}
 			// 用相对 url 参数传递链接，避免路径中的 // 被 CF 合并
 			window.open('?url=' + encodeURIComponent(value));
-		}
+		});
+
+		// 用户修正输入时清除错误状态
+		input.addEventListener('input', function () {
+			if (errorEl.textContent) {
+				errorEl.textContent = '';
+				input.removeAttribute('aria-invalid');
+			}
+		});
 	</script>
 </body>
 </html>

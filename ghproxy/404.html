@@ -2,10 +2,11 @@
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
 	<meta name="robots" content="noindex, nofollow">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title id="page-title">502: Bad gateway</title>
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+	<title id="page-title">404: Not found</title>
+	<link rel="icon" href="favicon.ico">
 	<link rel="shortcut icon" href="favicon.ico">
 	<style>
 		/* ============================================================
@@ -26,7 +27,9 @@
 
 			--accent: #58a6ff;
 			--accent-hover: #79b8ff;
+			--accent-deep: #4080ff;
 			--accent-glow: rgba(88, 166, 255, 0.18);
+			--accent-soft: rgba(88, 166, 255, 0.12);
 
 			--success: #3fb950;
 			--warning: #d29922;
@@ -56,16 +59,17 @@
 			--space-10: 2.5rem;
 			--space-12: 3rem;
 
-			--radius-sm: 8px;
-			--radius-md: 12px;
-			--radius-lg: 16px;
-			--radius-pill: 999px;
+		--radius-sm: 8px;
+		--radius-md: 12px;
+		--radius-lg: 16px;
+		--radius-pill: 999px;
 
-			--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-			--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-			--shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45);
+		--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+		--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+		--shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45);
+		--shadow-glow: 0 0 0 4px var(--accent-glow);
 
-			--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+		--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 			--transition-fast: 160ms var(--ease-out);
 			--transition-base: 280ms var(--ease-out);
 		}
@@ -348,7 +352,11 @@
 		   响应式
 		   ============================================================ */
 		@media (max-width: 640px) {
-			body { padding: var(--space-6) var(--space-4); }
+			body {
+				padding: var(--space-6) var(--space-4);
+				/* iOS 不支持 fixed 且会触发整页重绘，移动端回退为滚动 */
+				background-attachment: scroll;
+			}
 
 			.container { gap: var(--space-6); }
 
@@ -395,13 +403,13 @@
 	<main class="container">
 		<!-- 错误头部 -->
 		<header class="error-header">
-			<div class="error-code">502</div>
+			<div class="error-code">404</div>
 			<h1 class="error-title">
-				Bad gateway
-				<span class="code-label">Error 502</span>
+				Not found
+				<span class="code-label">Error 404</span>
 			</h1>
 			<div class="error-meta">
-				<span>访问 <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502" target="_blank" rel="noopener noreferrer">cloudflare.com</a> 了解更多信息</span>
+				<span>访问 <a href="https://www.cloudflare.com/" target="_blank" rel="noopener noreferrer">cloudflare.com</a> 了解更多信息</span>
 				<span class="error-time">2000-00-00 00:00:00 UTC</span>
 			</div>
 		</header>
@@ -410,7 +418,7 @@
 		<section class="status-grid" aria-label="连接状态">
 			<div class="status-card">
 				<div class="status-icon status-icon--ok" aria-hidden="true">
-					<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+					<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
 				</div>
@@ -421,20 +429,20 @@
 
 			<div class="status-card">
 				<div class="status-icon status-icon--ok" aria-hidden="true">
-					<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+					<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
 				</div>
 				<span class="status-name" id="cf-region-name">Liyue</span>
 				<span class="status-role">
-					<a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;">Cloudflare</a>
+					<a href="https://www.cloudflare.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;">Cloudflare</a>
 				</span>
 				<span class="status-state status-state--ok">正常</span>
 			</div>
 
 			<div class="status-card is-error">
 				<div class="status-icon status-icon--err" aria-hidden="true">
-					<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+					<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
 				</div>
@@ -454,7 +462,7 @@
 					</svg>
 					发生了什么？
 				</h2>
-				<p>Web 服务器报告了网关错误（Bad Gateway）。上游服务器未返回有效响应。</p>
+				<p>请求的页面或资源不存在（Not Found）。可能是链接拼写有误，或该资源已被删除。</p>
 			</article>
 			<article class="explain-card">
 				<h2>
@@ -463,17 +471,17 @@
 					</svg>
 					你可以做什么？
 				</h2>
-				<p>请稍等几分钟后重试。如果问题持续存在，请联系站点管理员。</p>
+				<p>请检查链接是否正确，或返回首页重试。</p>
 			</article>
 		</section>
 
 		<!-- 页脚信息 -->
 		<footer class="error-footer">
 			<span class="footer-item">
-				Cloudflare Ray ID: <strong id="ray-id">1145141919810CnM</strong>
+				Cloudflare Ray ID: <strong id="ray-id">1145141919810ff</strong>
 			</span>
-			<span class="footer-sep">·</span>
-			<span class="footer-item" id="cf-footer-item-ip">
+		<span class="footer-sep" id="cf-footer-sep-ip">·</span>
+		<span class="footer-item" id="cf-footer-item-ip">
 				Your IP:
 				<button type="button" class="ip-reveal-btn" id="cf-footer-ip-reveal">点击显示</button>
 				<span class="is-hidden" id="cf-footer-ip">1.1.1.1</span>
@@ -481,7 +489,7 @@
 			<span class="footer-sep">·</span>
 			<span class="footer-item">
 				Performance &amp; security by
-				<a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502" target="_blank" rel="noopener noreferrer">Cloudflare</a>
+					<a href="https://www.cloudflare.com/" target="_blank" rel="noopener noreferrer">Cloudflare</a>
 			</span>
 		</footer>
 	</main>
@@ -489,13 +497,13 @@
 	<script>
 		/* ==========  配置区：后续只改这里 ========== */
 		const rayIdList = [
-			'1145141919810CnM',
-			'114514gDx1919810',
-			'1145141919810Gjb',
-			'Qnm1145141919810',
-			'19210711949101CN',
-			'20200928-GenShin',
-			'CnmJBdlGgJBdXQnm'
+			'1145141919810ff',
+			'1919810abcdef145',
+			'1921070119491001',
+			'202009281234abcd',
+			'deadbeefcafebabe',
+			'feedface0badf00d',
+			'c0ffee15badc0de5'
 		];
 
 		// 大区 → 小区（数组为空时代表只有大区本身）
@@ -566,17 +574,28 @@
 		}
 
 		async function fetchIP() {
+			const ipItem = document.getElementById('cf-footer-item-ip');
+			const ipEl = document.getElementById('cf-footer-ip');
 			try {
-				const res = await fetch('https://cloudflare.com/cdn-cgi/trace');
+				const res = await fetch(location.origin + '/cdn-cgi/trace');
+				if (!res.ok) throw new Error('trace unavailable');
 				const text = await res.text();
 				const ip = text.split('\n').find(l => l.startsWith('ip='))?.split('=')[1];
-				if (ip) document.getElementById('cf-footer-ip').textContent = ip;
-			} catch {}
+				if (ip) {
+					ipEl.textContent = ip;
+					return;
+				}
+				throw new Error('no ip field');
+			} catch {
+				// 获取失败时隐藏整个 IP 项及其前置分隔符，避免向用户展示占位假 IP（如 1.1.1.1）
+				document.getElementById('cf-footer-sep-ip').classList.add('is-hidden');
+				ipItem.classList.add('is-hidden');
+			}
 		}
 
 		document.addEventListener('DOMContentLoaded', () => {
 			const domain = window.location.hostname;
-			document.title = `${domain} | 502: Bad gateway`;
+			document.title = `${domain} | 404: Not found`;
 			document.getElementById('cf-host-status-name').textContent = domain;
 			document.querySelector('.error-time').textContent = formatUTCTime();
 
@@ -588,9 +607,8 @@
 
 		// IP 显示交互
 		(function () {
-			var b = document.getElementById("cf-footer-item-ip");
 			var c = document.getElementById("cf-footer-ip-reveal");
-			if (b && "classList" in b) {
+			if (c && "classList" in c) {
 				c.addEventListener("click", function () {
 					c.classList.add("is-hidden");
 					document.getElementById("cf-footer-ip").classList.remove("is-hidden");
