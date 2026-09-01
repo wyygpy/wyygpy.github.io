@@ -10,19 +10,19 @@
 	<meta name="description" content="GitHub 文件及 API 加速服务，基于 Cloudflare Workers，支持 release、archive、raw、gist、api 链接加速。">
 	<style>
 		/* ============================================================
-		   Design Tokens — 深色玻璃拟态设计系统
+		   Design Tokens — 深空加速器 · 深色玻璃拟态设计系统 v2
 		   ============================================================ */
 		:root {
 			/* 色彩 —— 表面层 */
-			--bg-base: #0a0d14;
+			--bg-base: #080b12;
 			--bg-elevated: #0d1117;
 			--surface-glass: rgba(22, 27, 38, 0.55);
-			--surface-glass-strong: rgba(22, 27, 38, 0.78);
-			--border-subtle: rgba(255, 255, 255, 0.08);
-			--border-strong: rgba(255, 255, 255, 0.14);
+			--surface-glass-strong: rgba(26, 32, 46, 0.82);
+			--border-subtle: rgba(255, 255, 255, 0.09);
+			--border-strong: rgba(255, 255, 255, 0.16);
 
 			/* 色彩 —— 文本 */
-			--text-primary: #f0f6fc;
+			--text-primary: #f2f6fc;
 			--text-secondary: #c9d1d9;
 			--text-muted: #8b949e;
 			--text-faint: #6e7681;
@@ -30,8 +30,8 @@
 			/* 色彩 —— 强调 */
 			--accent: #58a6ff;
 			--accent-hover: #79b8ff;
-			--accent-deep: #4080ff;
-			--accent-glow: rgba(88, 166, 255, 0.18);
+			--accent-deep: #4078ff;
+			--accent-glow: rgba(88, 166, 255, 0.22);
 			--accent-soft: rgba(88, 166, 255, 0.12);
 
 			/* 语义色 */
@@ -74,8 +74,8 @@
 
 			/* 阴影 */
 			--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-			--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-			--shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45);
+			--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.38);
+			--shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
 			--shadow-glow: 0 0 0 4px var(--accent-glow);
 
 			/* 过渡 */
@@ -102,10 +102,14 @@
 			color: var(--text-primary);
 			min-height: 100vh;
 			background-color: var(--bg-base);
+			/* 环境光 + 加速引擎式斜向微光 + 细微网格纹理 */
 			background-image:
-				radial-gradient(ellipse 80% 60% at 20% 0%, rgba(88, 166, 255, 0.10), transparent 60%),
-				radial-gradient(ellipse 70% 50% at 85% 15%, rgba(163, 113, 247, 0.08), transparent 55%),
-				radial-gradient(ellipse 90% 70% at 50% 100%, rgba(63, 185, 80, 0.05), transparent 60%);
+				linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+				radial-gradient(ellipse 70% 55% at 22% -5%, rgba(88, 166, 255, 0.14), transparent 62%),
+				radial-gradient(ellipse 60% 45% at 88% 12%, rgba(163, 113, 247, 0.10), transparent 55%),
+				radial-gradient(ellipse 90% 65% at 50% 108%, rgba(63, 185, 80, 0.06), transparent 62%);
+			background-size: 44px 44px, 44px 44px, auto, auto, auto;
 			background-attachment: fixed;
 			display: flex;
 			flex-direction: column;
@@ -116,15 +120,113 @@
 		}
 
 		/* ============================================================
-		   布局容器
+		   布局容器 —— 居中聚焦式单列
 		   ============================================================ */
 		.container {
 			width: 100%;
-			max-width: 760px;
+			max-width: 860px;
 			display: flex;
 			flex-direction: column;
-			gap: var(--space-8);
+			gap: var(--space-10);
 			flex: 1;
+		}
+
+		/* ============================================================
+		   顶部导航栏
+		   ============================================================ */
+		.topbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: var(--space-4);
+			padding: var(--space-3) var(--space-5);
+			background: var(--surface-glass);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-lg);
+			backdrop-filter: blur(16px);
+			-webkit-backdrop-filter: blur(16px);
+			box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+			position: relative;
+			overflow: hidden;
+		}
+
+		/* 品牌区上方一道柔和顶部高光 */
+		.topbar::before {
+			content: "";
+			position: absolute;
+			inset: 0 0 auto 0;
+			height: 1px;
+			background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+		}
+
+		.topbar-brand {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--space-2);
+			font-size: var(--fs-base);
+			font-weight: 700;
+			letter-spacing: 0.01em;
+			color: var(--text-primary);
+			text-decoration: none;
+			position: relative;
+			transition: color var(--transition-fast);
+		}
+
+		.topbar-brand:hover { color: var(--accent); }
+
+		.topbar-brand .brand-mark {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 26px;
+			height: 26px;
+			border-radius: 8px;
+			background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+			color: #fff;
+			box-shadow: 0 2px 8px var(--accent-glow);
+		}
+
+		.topbar-brand .brand-mark svg {
+			width: 15px;
+			height: 15px;
+		}
+
+		.topbar-nav {
+			display: flex;
+			align-items: center;
+			gap: var(--space-2);
+		}
+
+		.topbar-link {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--space-2);
+			padding: var(--space-2) var(--space-4);
+			font-size: var(--fs-sm);
+			font-weight: 600;
+			color: var(--text-secondary);
+			text-decoration: none;
+			border-radius: var(--radius-pill);
+			border: 1px solid transparent;
+			transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.topbar-link:hover {
+			color: var(--accent);
+			background: var(--accent-soft);
+		}
+
+		.topbar-link.is-active {
+			color: #fff;
+			background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+			border-color: transparent;
+			box-shadow: 0 2px 10px var(--accent-glow);
+		}
+
+		.topbar-link svg {
+			width: 15px;
+			height: 15px;
+			flex-shrink: 0;
 		}
 
 		/* ============================================================
@@ -132,53 +234,125 @@
 		   ============================================================ */
 		.hero {
 			text-align: center;
-			padding-top: var(--space-6);
+			padding-top: var(--space-4);
 		}
 
 		.logo {
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
-			width: 88px;
-			height: 88px;
+			width: 84px;
+			height: 84px;
 			margin-bottom: var(--space-6);
-			border-radius: var(--radius-lg);
-			background: var(--surface-glass);
-			border: 1px solid var(--border-subtle);
-			backdrop-filter: blur(12px);
-			-webkit-backdrop-filter: blur(12px);
-			box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+			border-radius: 22px;
+			background: linear-gradient(145deg, rgba(22, 27, 38, 0.85), rgba(13, 17, 23, 0.9));
+			border: 1px solid var(--border-strong);
+			backdrop-filter: blur(14px);
+			-webkit-backdrop-filter: blur(14px);
+			box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+			position: relative;
 			transition: transform var(--transition-base), box-shadow var(--transition-base);
+		}
+
+		/* 品牌图标底部环绕光晕 */
+		.logo::after {
+			content: "";
+			position: absolute;
+			inset: -14px;
+			border-radius: 30px;
+			background: radial-gradient(circle at 50% 100%, var(--accent-glow), transparent 70%);
+			opacity: 0.7;
+			z-index: -1;
 		}
 
 		.logo:hover {
 			transform: translateY(-3px) scale(1.03);
-			box-shadow: var(--shadow-lg), 0 0 32px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+			box-shadow: var(--shadow-lg), 0 0 36px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 		}
 
-		.logo svg { width: 52px; height: 52px; }
+		.logo svg { width: 48px; height: 48px; }
 
 		.title {
 			font-size: var(--fs-3xl);
-			font-weight: 700;
+			font-weight: 800;
 			letter-spacing: -0.02em;
-			line-height: 1.15;
-			background: linear-gradient(135deg, #ffffff 0%, #c9d1d9 60%, #8b949e 100%);
+			line-height: 1.12;
+			background: linear-gradient(135deg, #ffffff 0%, #d3dbe6 55%, #9aa5b1 100%);
 			-webkit-background-clip: text;
 			background-clip: text;
 			-webkit-text-fill-color: transparent;
-			margin-bottom: var(--space-3);
+			margin-bottom: var(--space-4);
+		}
+
+		.title em {
+			font-style: normal;
+			background: linear-gradient(135deg, var(--accent-hover), var(--accent-deep));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
 		}
 
 		.subtitle {
-			font-size: var(--fs-base);
+			display: inline-flex;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: center;
+			gap: var(--space-2);
+			font-size: var(--fs-sm);
 			color: var(--text-muted);
 			font-weight: 400;
+			letter-spacing: 0.01em;
+		}
+
+		.subtitle .pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 3px 12px;
+			border-radius: var(--radius-pill);
+			background: var(--accent-soft);
+			border: 1px solid rgba(88, 166, 255, 0.28);
+			color: var(--accent-hover);
+			font-family: var(--font-mono);
+			font-size: var(--fs-xs);
+			font-weight: 600;
+			white-space: nowrap;
+		}
+
+		.subtitle .pill .dot {
+			width: 6px;
+			height: 6px;
+			border-radius: 50%;
+			background: var(--success);
+			box-shadow: 0 0 6px var(--success);
+			animation: pulse 2.2s var(--ease-out) infinite;
 		}
 
 		/* ============================================================
-		   搜索表单
+		   搜索表单 —— 视觉中心
 		   ============================================================ */
+		.search-shell {
+			position: relative;
+			border-radius: var(--radius-lg);
+			padding: var(--space-3);
+			background: linear-gradient(160deg, rgba(88, 166, 255, 0.10), rgba(22, 27, 38, 0.35) 40%);
+			box-shadow: var(--shadow-lg);
+		}
+
+		/* 发光描边 */
+		.search-shell::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			border-radius: var(--radius-lg);
+			padding: 1px;
+			background: linear-gradient(135deg, rgba(88, 166, 255, 0.5), rgba(163, 113, 247, 0.25), transparent 70%);
+			-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+			-webkit-mask-composite: xor;
+			mask-composite: exclude;
+			pointer-events: none;
+		}
+
 		.search-container {
 			position: relative;
 			display: flex;
@@ -188,70 +362,158 @@
 		.search-input {
 			width: 100%;
 			height: 60px;
-			padding: 0 68px 0 var(--space-6);
+			padding: 0 300px 0 var(--space-6);
 			font-family: var(--font-mono);
 			font-size: var(--fs-base);
 			/* 禁用字体连字/上下文替代，避免连续斜杠 // 被字体特性合并或替换 */
 			font-variant-ligatures: none;
 			font-feature-settings: "liga" 0, "calt" 0, "dlig" 0;
 			color: var(--text-primary);
-			background: var(--surface-glass);
-			border: 1px solid var(--border-strong);
-			border-radius: var(--radius-pill);
-			backdrop-filter: blur(16px);
-			-webkit-backdrop-filter: blur(16px);
-			box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+			background: var(--surface-glass-strong);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-md);
+			backdrop-filter: blur(18px);
+			-webkit-backdrop-filter: blur(18px);
+			box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
 			transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 		}
 
 		.search-input::placeholder {
 			color: var(--text-faint);
 			font-family: var(--font-sans);
+			letter-spacing: 0.01em;
 		}
 
 		.search-input:hover {
-			border-color: rgba(255, 255, 255, 0.22);
+			border-color: rgba(255, 255, 255, 0.2);
 		}
 
 		.search-input:focus {
 			outline: none;
 			border-color: var(--accent);
 			background: var(--surface-glass-strong);
-			box-shadow: var(--shadow-glow), var(--shadow-md);
+			box-shadow: var(--shadow-glow), inset 0 2px 10px rgba(0, 0, 0, 0.3);
 		}
 
 		.search-button {
-			position: absolute;
-			right: var(--space-2);
-			top: 50%;
-			transform: translateY(-50%);
-			width: 48px;
-			height: 48px;
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
+			height: 46px;
+			padding: 0 var(--space-5);
+			flex-shrink: 0;
 			border: none;
 			border-radius: var(--radius-pill);
 			background: linear-gradient(135deg, var(--accent), var(--accent-deep));
 			color: #fff;
+			font-size: var(--fs-sm);
+			font-weight: 600;
+			font-family: var(--font-sans);
+			white-space: nowrap;
 			cursor: pointer;
-			box-shadow: 0 4px 14px var(--accent-glow);
+			box-shadow: 0 4px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 			transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
 		}
 
+		.search-btn-icon {
+			width: 17px;
+			height: 17px;
+			flex-shrink: 0;
+		}
+
+		/* 纯图标主按钮（加速下载）：等宽方形，图标居中 */
+		#download-btn.search-button {
+			width: 46px;
+			padding: 0;
+		}
+		#download-btn .search-btn-icon {
+			margin: 0;
+		}
+
+		/* 未开启 Release 模式时隐藏「获取列表」按钮 */
+		.search-button.is-hidden {
+			display: none;
+		}
+
 		.search-button:hover {
-			transform: translateY(-50%) scale(1.06);
+			transform: scale(1.03);
 			filter: brightness(1.1);
-			box-shadow: 0 6px 22px var(--accent-glow);
+			box-shadow: 0 6px 24px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 		}
 
 		.search-button:active {
-			transform: translateY(-50%) scale(0.96);
+			transform: scale(0.96);
 		}
 
 		.search-button:focus-visible {
 			outline: 2px solid var(--accent);
 			outline-offset: 3px;
+		}
+
+		/* 输入框右侧操作区：Release 开关 + 获取列表按钮 */
+		.search-actions {
+			position: absolute;
+			right: var(--space-2);
+			top: 50%;
+			transform: translateY(-50%);
+			display: flex;
+			align-items: center;
+			gap: var(--space-2);
+		}
+
+		.release-button {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+			height: 46px;
+			padding: 0 var(--space-4);
+			flex-shrink: 0;
+			border: 1px solid var(--border-strong);
+			border-radius: var(--radius-pill);
+			background: rgba(22, 27, 38, 0.6);
+			color: var(--text-secondary);
+			font-size: var(--fs-sm);
+			font-weight: 600;
+			font-family: var(--font-sans);
+			white-space: nowrap;
+			cursor: pointer;
+			box-shadow: var(--shadow-sm);
+			transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.release-button svg {
+			width: 15px;
+			height: 15px;
+			opacity: 0.7;
+			transition: opacity var(--transition-fast);
+		}
+
+		.release-button:hover {
+			color: var(--accent);
+			border-color: var(--accent);
+			background: var(--accent-soft);
+		}
+
+		.release-button:active {
+			transform: scale(0.96);
+		}
+
+		.release-button:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 2px;
+		}
+
+		/* 查询 Release 进行中/有结果时的高亮态 */
+		.release-button.is-active {
+			color: #fff;
+			border-color: transparent;
+			background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+			box-shadow: 0 4px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+		}
+
+		.release-button.is-active svg {
+			opacity: 1;
 		}
 
 		/* ============================================================
@@ -260,7 +522,7 @@
 		.search-group {
 			display: flex;
 			flex-direction: column;
-			gap: var(--space-2);
+			gap: var(--space-3);
 		}
 
 		.form-error {
@@ -275,128 +537,337 @@
 		.form-error:empty { visibility: hidden; }
 
 		/* ============================================================
-           提示信息卡片
-           ============================================================ */
-		.tips {
+		   Release 列表查询
+		   ============================================================ */
+		.release-results {
+			display: none;
+			flex-direction: column;
+			gap: var(--space-4);
+		}
+
+		/* Release 开关开启后展示列表 */
+		.release-results.is-open {
+			display: flex;
+		}
+
+		.release-loading,
+		.release-progress,
+		.release-empty,
+		.release-count {
+			font-size: var(--fs-sm);
+			color: var(--text-muted);
+		}
+
+		.release-progress {
+			text-align: center;
+			padding: var(--space-2) 0;
+			color: var(--text-muted);
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: var(--space-2);
+		}
+
+		.release-progress .spinner {
+			width: 15px;
+			height: 15px;
+			border-radius: 50%;
+			border: 2px solid var(--border-strong);
+			border-top-color: var(--accent);
+			animation: spin 0.7s linear infinite;
+		}
+
+		.release-count {
+			text-align: center;
+			padding-top: var(--space-2);
+			border-top: 1px solid var(--border-subtle);
+		}
+
+		/* 骨架屏加载态 */
+		.skeleton-card {
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-3);
-		}
-
-		.tip {
-			display: flex;
-			align-items: flex-start;
-			gap: var(--space-3);
-			padding: var(--space-4) var(--space-5);
+			padding: var(--space-5);
 			background: var(--surface-glass);
 			border: 1px solid var(--border-subtle);
-			border-left: 3px solid var(--accent);
 			border-radius: var(--radius-md);
 			backdrop-filter: blur(10px);
 			-webkit-backdrop-filter: blur(10px);
-			color: var(--text-secondary);
+		}
+
+		.skeleton-line {
+			height: 14px;
+			border-radius: 6px;
+			background: linear-gradient(90deg,
+				rgba(255, 255, 255, 0.05) 25%,
+				rgba(255, 255, 255, 0.13) 37%,
+				rgba(255, 255, 255, 0.05) 63%);
+			background-size: 400% 100%;
+			animation: skeletonShimmer 1.4s ease-in-out infinite;
+		}
+
+		.skeleton-line--short { width: 35%; }
+		.skeleton-line--med   { width: 75%; }
+
+		@keyframes skeletonShimmer {
+			0%   { background-position: 100% 50%; }
+			100% { background-position: 0% 50%; }
+		}
+
+		.release-note {
 			font-size: var(--fs-sm);
-			line-height: 1.65;
+			color: var(--warning);
+			padding: var(--space-3) var(--space-4);
+			background: rgba(210, 153, 34, 0.08);
+			border: 1px solid var(--border-subtle);
+			border-left: 3px solid var(--warning);
+			border-radius: var(--radius-md);
 		}
 
-		.tip--success { border-left-color: var(--success); }
-		.tip--warning { border-left-color: var(--warning); }
-		.tip--info    { border-left-color: var(--info); }
-
-		.tip-icon {
-			flex-shrink: 0;
-			font-size: 1rem;
-			line-height: 1.65;
+		.release-card {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3);
+			padding: var(--space-5);
+			background: var(--surface-glass);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-md);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			box-shadow: var(--shadow-sm);
+			transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
 		}
 
-		.tip a {
+		.release-card:hover {
+			border-color: rgba(88, 166, 255, 0.3);
+			box-shadow: var(--shadow-md), 0 0 0 1px rgba(88, 166, 255, 0.08);
+			transform: translateY(-1px);
+		}
+
+		.release-head {
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: var(--space-2) var(--space-3);
+		}
+
+		.release-tag {
+			font-family: var(--font-mono);
+			font-size: var(--fs-sm);
+			font-weight: 600;
+			color: var(--accent);
+			word-break: break-all;
+		}
+
+		/* 版本标签作为跳转链接 */
+		.release-tag--link {
 			color: var(--accent);
 			text-decoration: none;
 			border-bottom: 1px dashed rgba(88, 166, 255, 0.4);
 			transition: color var(--transition-fast), border-color var(--transition-fast);
 		}
 
-		.tip a:hover {
+		.release-tag--link:hover {
 			color: var(--accent-hover);
 			border-bottom-color: var(--accent-hover);
 		}
 
-		/* ============================================================
-           示例面板
-           ============================================================ */
-		.example {
-			padding: var(--space-6);
-			background: var(--surface-glass);
-			border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-lg);
-			backdrop-filter: blur(14px);
-			-webkit-backdrop-filter: blur(14px);
-			box-shadow: var(--shadow-sm);
+		.release-date {
+			font-size: var(--fs-xs);
+			color: var(--text-faint);
 		}
 
-		.example-title {
-			display: flex;
-			align-items: center;
-			gap: var(--space-2);
-			font-size: var(--fs-sm);
+		.release-badge {
+			font-size: var(--fs-xs);
 			font-weight: 600;
+			color: var(--success);
+			padding: 2px var(--space-2);
+			background: rgba(63, 185, 80, 0.12);
+			border: 1px solid rgba(63, 185, 80, 0.35);
+			border-radius: var(--radius-pill);
+		}
+
+		.release-name {
+			font-size: var(--fs-base);
+			font-weight: 600;
+			color: var(--text-primary);
+			word-break: break-all;
+		}
+
+		.release-body {
+			font-size: var(--fs-sm);
 			color: var(--text-secondary);
-			text-transform: uppercase;
-			letter-spacing: 0.08em;
-			margin-bottom: var(--space-5);
-			padding-bottom: var(--space-4);
-			border-bottom: 1px solid var(--border-subtle);
+			white-space: pre-wrap;
+			word-break: break-all;
+			line-height: 1.65;
 		}
 
-		.example-title .dot {
-			width: 6px;
-			height: 6px;
-			border-radius: 50%;
-			background: var(--accent);
-			box-shadow: 0 0 8px var(--accent-glow);
+		/* 描述展开/收起按钮 */
+		.release-body-toggle {
+			align-self: flex-start;
+			border: none;
+			background: none;
+			color: var(--accent);
+			font-size: var(--fs-xs);
+			font-weight: 600;
+			font-family: var(--font-sans);
+			cursor: pointer;
+			padding: 0;
 		}
 
-		.example-list {
+		.release-body-toggle:hover { color: var(--accent-hover); }
+		.release-body-toggle:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 2px;
+			border-radius: 4px;
+		}
+
+		.asset-list {
 			list-style: none;
 			display: flex;
 			flex-direction: column;
-			gap: var(--space-3);
+			gap: var(--space-2);
+			margin-top: var(--space-1);
 		}
 
-		.example-item {
+		.asset-item {
 			display: flex;
-			align-items: baseline;
-			gap: var(--space-3);
-			font-family: var(--font-mono);
+			align-items: center;
+			flex-wrap: wrap;
+			gap: var(--space-2) var(--space-3);
 			font-size: var(--fs-sm);
-			color: var(--text-secondary);
-			line-height: 1.5;
-			word-break: break-all;
-			overflow-wrap: break-word;
-		}
-
-		.example-tag {
-			flex-shrink: 0;
-			font-family: var(--font-sans);
-			font-size: var(--fs-xs);
-			font-weight: 500;
-			color: var(--text-muted);
-			min-width: 84px;
-			padding: 2px var(--space-2);
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--border-subtle);
+			padding: var(--space-2) var(--space-3);
+			background: rgba(13, 17, 23, 0.35);
+			border: 1px solid transparent;
 			border-radius: var(--radius-sm);
-			text-align: center;
+			transition: border-color var(--transition-fast), background var(--transition-fast);
 		}
 
-		.example-link {
+		.asset-item:hover {
+			border-color: var(--border-subtle);
+			background: rgba(13, 17, 23, 0.5);
+		}
+
+		.asset-name {
 			color: var(--text-secondary);
+			font-family: var(--font-mono);
 			word-break: break-all;
 		}
+
+		.asset-size {
+			font-size: var(--fs-xs);
+			color: var(--text-faint);
+		}
+
+		/* 附件右侧操作组（复制 + 下载） */
+		.asset-actions {
+			margin-left: auto;
+			display: inline-flex;
+			align-items: center;
+			gap: var(--space-2);
+			flex-shrink: 0;
+		}
+
+		.asset-mini-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+			padding: 4px var(--space-3);
+			border: 1px solid var(--border-strong);
+			border-radius: var(--radius-pill);
+			background: var(--surface-glass-strong);
+			color: var(--text-secondary);
+			font-size: var(--fs-xs);
+			font-weight: 600;
+			font-family: var(--font-sans);
+			cursor: pointer;
+			transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+		}
+
+		.asset-mini-btn:hover {
+			color: var(--accent);
+			border-color: var(--accent);
+			background: var(--accent-soft);
+		}
+
+		.asset-mini-btn:active { transform: scale(0.96); }
+		.asset-mini-btn:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 2px;
+		}
+
+		.asset-mini-btn.is-copied {
+			color: var(--success);
+			border-color: var(--success);
+		}
+
+		.asset-mini-btn.is-error {
+			color: var(--danger);
+			border-color: var(--danger);
+		}
+
+		.asset-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--space-1);
+			padding: 4px var(--space-3);
+			border: none;
+			border-radius: var(--radius-pill);
+			background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+			color: #fff;
+			font-size: var(--fs-xs);
+			font-weight: 600;
+			text-decoration: none;
+			cursor: pointer;
+			box-shadow: 0 2px 8px var(--accent-glow);
+			transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+		}
+
+		.asset-btn:hover {
+			transform: translateY(-1px) scale(1.03);
+			filter: brightness(1.1);
+			box-shadow: 0 4px 14px var(--accent-glow);
+		}
+
+		.asset-btn:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 2px;
+		}
+
+		.asset-empty {
+			font-size: var(--fs-sm);
+			color: var(--text-muted);
+		}
+
+		/* 页脚 */
+		.page-footer {
+			margin-top: auto;
+			padding-top: var(--space-6);
+			border-top: 1px solid var(--border-subtle);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: var(--space-3);
+			font-size: var(--fs-xs);
+			color: var(--text-faint);
+		}
+
+		.page-footer .sep {
+			opacity: 0.4;
+		}
+
+		.page-footer a {
+			color: var(--text-faint);
+			text-decoration: none;
+			transition: color var(--transition-fast);
+		}
+
+		.page-footer a:hover { color: var(--accent); }
 
 		/* ============================================================
-           响应式
-           ============================================================ */
+		   响应式
+		   ============================================================ */
 		@media (max-width: 640px) {
 			body {
 				padding: var(--space-6) var(--space-4);
@@ -404,27 +875,55 @@
 				background-attachment: scroll;
 			}
 
-			.container { gap: var(--space-6); }
+			.container { gap: var(--space-8); }
+
+			.topbar {
+				padding: var(--space-2) var(--space-3);
+			}
+
+			.topbar-brand { font-size: var(--fs-sm); }
+
+			.topbar-link {
+				padding: var(--space-1) var(--space-3);
+				font-size: var(--fs-xs);
+			}
 
 			.title { font-size: var(--fs-2xl); }
+
+			.logo { width: 68px; height: 68px; }
+			.logo svg { width: 40px; height: 40px; }
+
+			.search-shell { padding: var(--space-2); }
 
 			.search-input {
 				height: 54px;
 				font-size: var(--fs-sm);
-				padding: 0 60px 0 var(--space-4);
+				padding: 0 250px 0 var(--space-4);
 			}
 
-			.search-button { width: 42px; height: 42px; }
-
-			.example { padding: var(--space-4); }
-
-			.example-item {
-				flex-direction: column;
-				gap: var(--space-2);
-				align-items: flex-start;
+			.search-button {
+				height: 42px;
+				padding: 0 var(--space-3);
+				font-size: var(--fs-xs);
 			}
 
-			.example-tag { min-width: auto; align-self: flex-start; }
+			#download-btn.search-button {
+				width: 42px;
+			}
+
+			.search-actions { gap: var(--space-1); }
+
+			.release-button {
+				height: 42px;
+				padding: 0 var(--space-3);
+				font-size: var(--fs-xs);
+			}
+
+			.release-card { padding: var(--space-4); }
+
+			.asset-actions { margin-left: 0; }
+
+			.subtitle .pill { display: none; }
 		}
 
 		/* ============================================================
@@ -435,6 +934,16 @@
 				animation-duration: 0.01ms !important;
 				transition-duration: 0.01ms !important;
 			}
+
+			/* 关闭骨架屏闪烁与脉冲 */
+			.skeleton-line {
+				animation: none !important;
+				background: rgba(255, 255, 255, 0.08);
+			}
+
+			.subtitle .pill .dot {
+				animation: none;
+			}
 		}
 
 		/* 入场动画 */
@@ -443,142 +952,556 @@
 			to   { opacity: 1; transform: translateY(0); }
 		}
 
-		.hero, .search-container, .tips, .example {
+		@keyframes pulse {
+			0%, 100% { opacity: 1; }
+			50%      { opacity: 0.35; }
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		.topbar, .hero, .search-shell {
 			animation: fadeUp 0.6s var(--ease-out) both;
 		}
-		.search-container { animation-delay: 0.08s; }
-		.tips             { animation-delay: 0.16s; }
-		.example          { animation-delay: 0.24s; }
+		.hero          { animation-delay: 0.06s; }
+		.search-shell  { animation-delay: 0.12s; }
+		.page-footer   { animation-delay: 0.2s; }
 	</style>
 </head>
 <body>
 	<main class="container">
-		<!-- Hero -->
-		<header class="hero">
-			<a class="logo" href="https://github.com" target="_blank" rel="noopener" aria-label="GitHub">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 98 96" fill="#ffffff" aria-hidden="true">
-					<path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
-				</svg>
+		<!-- 顶部导航栏 -->
+		<nav class="topbar" aria-label="主导航">
+			<a class="topbar-brand" href="index.html">
+				<span class="brand-mark" aria-hidden="true">
+					<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5A6.5 6.5 0 1 0 14.5 8A6.51 6.51 0 0 0 8 1.5Zm0 2.75a1.5 1.5 0 1 1-1.5 1.5A1.5 1.5 0 0 1 8 4.25Zm2 7.5h-4a.75.75 0 0 1 0-1.5h1.25V8H6.25a.75.75 0 0 1 0-1.5h1.25a1 1 0 0 1 1 1v2.25H10a.75.75 0 0 1 0 1.5Z"/></svg>
+				</span>
+				加速
 			</a>
-			<h1 class="title">GitHub 文件加速</h1>
-			<p class="subtitle">基于 Cloudflare Workers · release / archive / raw / gist / api 全链路加速</p>
-		</header>
+			<div class="topbar-nav">
+				<a class="topbar-link is-active" href="index.html" aria-current="page">
+					<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m8 1.5 6.5 5.25H13V14a1 1 0 0 1-1 1H9.5v-4.5h-3V15H4a1 1 0 0 1-1-1V6.75H1.5L8 1.5Z"/></svg>
+					首页
+				</a>
+				<a class="topbar-link" href="help.html">
+					<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5A6.5 6.5 0 1 0 14.5 8A6.51 6.51 0 0 0 8 1.5Zm0 2.75a1.5 1.5 0 1 1-1.5 1.5A1.5 1.5 0 0 1 8 4.25Zm2 7.5h-4a.75.75 0 0 1 0-1.5h1.25V8H6.25a.75.75 0 0 1 0-1.5h1.25a1 1 0 0 1 1 1v2.25H10a.75.75 0 0 1 0 1.5Z"/></svg>
+					说明
+				</a>
+			</div>
+		</nav>
 
-		<!-- 搜索表单 -->
-		<div class="search-group">
-			<form id="search-form" class="search-container" role="search">
-				<input
-					type="text"
-					class="search-input"
-					name="q"
-					placeholder="粘贴 GitHub 文件或 API 链接…"
-					aria-label="GitHub 链接输入框"
-					autocomplete="off"
-					spellcheck="false"
-					aria-describedby="form-error"
-				>
-				<button type="submit" class="search-button" aria-label="开始加速">
-					<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
-						<path d="M13 5l7 7-7 7M5 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+		<!-- 主区：输入 + Release 列表（居中聚焦单列） -->
+		<div class="main-column">
+			<!-- Hero -->
+			<header class="hero">
+				<a class="logo" href="https://github.com" target="_blank" rel="noopener" aria-label="GitHub">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 98 96" fill="#ffffff" aria-hidden="true">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
 					</svg>
-				</button>
-			</form>
-			<p class="form-error" id="form-error" role="alert" aria-live="assertive"></p>
+				</a>
+				<h1 class="title">GitHub 文件<em>加速</em></h1>
+				<p class="subtitle">
+					<span>基于 Cloudflare Workers · release / archive / raw / gist / api 全链路加速</span>
+					<span class="pill" aria-hidden="true">
+						<span class="dot"></span>
+						<span>READY</span>
+					</span>
+				</p>
+			</header>
+
+			<!-- 搜索 / Release 统一表单 -->
+			<div class="search-group">
+				<div class="search-shell">
+					<form id="search-form" class="search-container" role="search">
+						<input
+							type="text"
+							class="search-input"
+							name="q"
+							placeholder="粘贴 GitHub 链接加速下载，或输入仓库查看 Release…"
+							aria-label="GitHub 链接或仓库输入框"
+							autocomplete="off"
+							spellcheck="false"
+							aria-describedby="form-error"
+						>
+						<div class="search-actions">
+							<button type="button" class="release-button" id="release-btn" aria-pressed="false" aria-label="开启获取 Release 列表功能">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 4.25A.75.75 0 0 1 1.75 3.5h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 4.25Zm0 4A.75.75 0 0 1 1.75 7.5h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1-.75-.75Zm0 4a.75.75 0 0 1 .75-.75h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1-.75-.75Z"/></svg>
+								Release
+							</button>
+							<!-- 主按钮槽位：默认「加速下载」图标；开启 Release 后替换为「获取列表」 -->
+							<button type="submit" class="search-button" id="download-btn" aria-label="加速下载">
+								<svg class="search-btn-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.69l2.72-2.72a.75.75 0 1 1 1.06 1.06l-4 4a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 1 1 1.06-1.06l2.72 2.72V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12.5a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
+							</button>
+							<button type="button" class="search-button is-hidden" id="search-btn" aria-label="获取 Release 列表">
+								获取列表
+							</button>
+						</div>
+					</form>
+				</div>
+				<p class="form-error" id="form-error" role="alert" aria-live="assertive"></p>
+				<div id="release-results" class="release-results"></div>
+			</div>
 		</div>
 
-		<!-- 提示信息 -->
-		<section class="tips" aria-label="使用提示">
-			<div class="tip tip--info">
-				<span class="tip-icon" aria-hidden="true">✨</span>
-				<span>支持带协议头 (https://) 或不带的 GitHub 链接，同时支持 API 加速。</span>
-			</div>
-			<div class="tip tip--success">
-				<span class="tip-icon" aria-hidden="true">🚀</span>
-				<span>release、archive 使用 Cloudflare 加速，文件会跳转至 JsDelivr。</span>
-			</div>
-			<div class="tip tip--warning">
-				<span class="tip-icon" aria-hidden="true">⚠️</span>
-				<span>注意：暂不支持文件夹下载。</span>
-			</div>
-		</section>
-
-		<!-- 示例 -->
-		<section class="example" aria-label="合法输入示例">
-			<div class="example-title">
-				<span class="dot" aria-hidden="true"></span>
-				合法输入示例
-			</div>
-			<ul class="example-list">
-				<li class="example-item">
-					<span class="example-tag">分支源码</span>
-					<span class="example-link">https://github.com/user/project/archive/master.zip</span>
-				</li>
-				<li class="example-item">
-					<span class="example-tag">release 源码</span>
-					<span class="example-link">https://github.com/user/project/archive/v0.1.0.tar.gz</span>
-				</li>
-				<li class="example-item">
-					<span class="example-tag">release 文件</span>
-					<span class="example-link">https://github.com/user/project/releases/download/v0.1.0/example.zip</span>
-				</li>
-				<li class="example-item">
-					<span class="example-tag">commit 文件</span>
-					<span class="example-link">https://github.com/user/project/blob/123/filename</span>
-				</li>
-				<li class="example-item">
-					<span class="example-tag">gist</span>
-					<span class="example-link">https://gist.githubusercontent.com/user/123/raw/cmd.py</span>
-				</li>
-				<li class="example-item">
-					<span class="example-tag">api</span>
-					<span class="example-link">https://api.github.com/repos/user/project</span>
-				</li>
-			</ul>
-		</section>
+		<!-- 页脚 -->
+		<footer class="page-footer">
+			<span>GitHub 文件加速</span>
+			<span class="sep">·</span>
+			<span>基于 Cloudflare Workers</span>
+		</footer>
 	</main>
 
 	<script>
-		// 支持的 GitHub URL 校验（与 worker.js checkUrl 对齐）
-		const SUPPORTED_URL = /^(?:https?:\/\/)?(?:github\.com\/.+?\/.+?\/(?:releases|archive|blob|raw|tags|info|git-).*|raw\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+?\/.+|gist\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+|api\.github\.com\/.*)$/i;
+		// ============================================================
+		// 双功能统一表单：
+		//   1) 加速下载（核心，常驻）：粘贴 GitHub 链接 → 下载图标提交 → ?url= 代理
+		//   2) Release 列表（可选）：开启 Release 后下载图标切换为「获取列表」→ 分页拉取
+		// 主按钮槽位互斥：加速图标 与 获取列表 只显示其一
+		// 数据源为 GitHub API 原始 JSON；一切用户可控字段用 textContent 渲染，禁止 innerHTML
+		// 优化：AbortController 取消、分批渐进渲染、骨架屏 + 进度、aria-live 播报
+		// ============================================================
+		(function () {
+			'use strict';
 
-		const form = document.getElementById('search-form');
-		const input = form.querySelector('[name=q]');
-		const errorEl = document.getElementById('form-error');
+			const form = document.getElementById('search-form');
+			const input = form.querySelector('[name=q]');
+			const errorEl = document.getElementById('form-error');
+			const releaseResults = document.getElementById('release-results');
+			const releaseBtn = document.getElementById('release-btn');
+			const searchBtn = document.getElementById('search-btn');
+			const downloadBtn = document.getElementById('download-btn');
 
-		function showError(message) {
-			errorEl.textContent = message;
-			input.setAttribute('aria-invalid', 'true');
-			input.focus();
-		}
+			// 渲染批次大小：每批插入的卡片数（降低 DOM 峰值与主线程阻塞）
+			const RENDER_BATCH = 20;
+			// 单页拉取条数（GitHub API 上限 100）
+			const PER_PAGE = 100;
+			// 分页安全上限：最多 20 页（2000 条）
+			const MAX_PAGE = 20;
 
-		form.addEventListener('submit', function (e) {
-			e.preventDefault();
-			let value = (input.value || '').trim();
-			if (!value) {
-				showError('请输入 GitHub 链接');
-				return;
+			let reqSeq = 0;          // 竞态令牌：丢弃过期响应
+			let currentAbort = null; // 当前查询的 AbortController
+
+			// 创建/复用 AbortController，用于取消未完成的请求
+			function newAbort() {
+				if (currentAbort) currentAbort.abort();
+				currentAbort = new AbortController();
+				return currentAbort.signal;
 			}
-			// 规范化：协议相对 // 开头 → https://；无协议 → https://
-			if (value.startsWith('//')) value = 'https:' + value;
-			else if (!/^https?:\/\//i.test(value)) value = 'https://' + value;
-			// 合并路径中多余斜杠（保留协议头）
-			value = value.replace(/^([a-z]+:\/\/)(.*)$/i, (m, proto, rest) => proto + rest.replace(/\/{2,}/g, '/'));
-			// 校验为合法 GitHub 链接
-			if (!SUPPORTED_URL.test(value)) {
-				showError('暂不支持的链接格式，请粘贴 release / archive / blob / raw / gist / api 链接');
-				return;
-			}
-			// 用相对 url 参数传递链接，避免路径中的 // 被 CF 合并
-			window.open('?url=' + encodeURIComponent(value));
-		});
 
-		// 用户修正输入时清除错误状态
-		input.addEventListener('input', function () {
-			if (errorEl.textContent) {
-				errorEl.textContent = '';
-				input.removeAttribute('aria-invalid');
+			function showError(message) {
+				errorEl.textContent = message;
+				input.setAttribute('aria-invalid', 'true');
 			}
-		});
+
+			function clearError() {
+				if (errorEl.textContent) {
+					errorEl.textContent = '';
+					input.removeAttribute('aria-invalid');
+				}
+			}
+
+			// Release 开关：切换功能开启状态并显隐列表区域与主按钮槽位
+			// 关闭（默认）：主按钮 = 加速下载图标；开启：主按钮 = 获取列表
+			function setReleaseMode(on) {
+				releaseBtn.classList.toggle('is-active', on);
+				releaseBtn.setAttribute('aria-pressed', String(on));
+				releaseResults.classList.toggle('is-open', on);
+				// 主按钮槽位互斥：加速图标 与 获取列表 只显示其一
+				downloadBtn.classList.toggle('is-hidden', on);
+				searchBtn.classList.toggle('is-hidden', !on);
+				if (!on && currentAbort) {
+					// 关闭模式时取消未完成的请求
+					currentAbort.abort();
+					currentAbort = null;
+				}
+			}
+
+			releaseBtn.addEventListener('click', function () {
+				const opening = !releaseBtn.classList.contains('is-active');
+				setReleaseMode(opening);
+				clearError();
+				if (!opening) {
+					releaseResults.textContent = '';
+				} else if (input.value.trim()) {
+					const parsed = parseRepo(input.value);
+					if (parsed) queryReleases(parsed.owner, parsed.repo);
+				}
+			});
+
+			// 「获取列表」按钮：仅当 Release 开启时可见，点击强制拉取该仓库的全部 Release
+			searchBtn.addEventListener('click', function () {
+				clearError();
+				const parsed = parseRepo(input.value);
+				if (!parsed) {
+					showError('请输入 GitHub 仓库，如 user/repo 或 github.com/user/repo');
+					return;
+				}
+				setReleaseMode(true);
+				queryReleases(parsed.owner, parsed.repo);
+			});
+
+			// 表单提交（Enter 键）：跟随当前模式
+			//  - Release 关闭（主按钮=加速图标）：优先加速链接，否则按仓库查列表
+			//  - Release 开启（主按钮=获取列表）：按仓库查列表
+			form.addEventListener('submit', function (e) {
+				e.preventDefault();
+				clearError();
+				const releaseOn = releaseBtn.classList.contains('is-active');
+				if (!releaseOn) {
+					const accel = resolveAccelUrl(input.value);
+					if (accel) {
+						// 有可加速链接：直接走 ?url= 加速（核心功能）
+						releaseResults.textContent = '';
+						window.location.href = accel;
+						return;
+					}
+				}
+				// 列表模式 / 无链接形态：按仓库查询 Release 列表
+				const parsed = parseRepo(input.value);
+				if (!parsed) {
+					showError('粘贴 GitHub 链接可加速下载；或输入仓库（user/repo）查看 Release 列表');
+					return;
+				}
+				setReleaseMode(true);
+				queryReleases(parsed.owner, parsed.repo);
+			});
+
+			// 用户修正输入时清除错误状态
+			input.addEventListener('input', clearError);
+
+			// 与 worker.js ROUTES（exp1~exp7）对齐的「可加速 GitHub 链接」判定：
+			// releases/archive、blob/raw、info/git-、raw 域、gist、tags、api
+			// 注：info/git-（exp3）与 tags（exp6）分支不要求尾随斜杠（worker 为 .*）
+			const SUPPORTED_URL = /^(?:https?:\/\/)?(?:github\.com\/.+?\/.+?\/(?:releases|archive|blob|raw)\/.*|github\.com\/.+?\/.+?\/(?:info|git-).*|github\.com\/.+?\/.+?\/tags.*|raw\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+?\/.+|gist\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+|api\.github\.com\/.*)$/i;
+
+			// 解析输入为可加速的 ?url= 目标；非链接形态返回 null
+			function resolveAccelUrl(raw) {
+				let v = (raw || '').trim();
+				if (!v) return null;
+				if (!SUPPORTED_URL.test(v)) return null;
+				// 统一补协议前缀，交给 worker 归一化
+				if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+				return '?url=' + encodeURIComponent(v);
+			}
+
+			// 输入归一化：user/repo | github.com/user/repo[/releases[/…]]，大小写不敏感
+			function parseRepo(raw) {
+				let v = (raw || '').trim()
+					.replace(/^https?:\/\//i, '')
+					.replace(/^\/\//, '')
+					.replace(/^(?:www\.)?github\.com\//i, '')
+					.replace(/\/releases(?:\/.*)?$/i, '') // 去 releases 及其子路径尾缀
+					.replace(/\/+$/, '');
+				const m = /^([\w.-]+)\/([\w.-]+)$/.exec(v);
+				return m ? { owner: m[1], repo: m[2] } : null;
+			}
+
+			// 元素工厂：textContent 赋值，杜绝 XSS
+			function el(tag, cls, text) {
+				const node = document.createElement(tag);
+				if (cls) node.className = cls;
+				if (text !== undefined) node.textContent = text;
+				return node;
+			}
+
+			function fmtSize(bytes) {
+				if (typeof bytes !== 'number' || bytes <= 0) return '';
+				if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+				if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+				return bytes + ' B';
+			}
+
+			function fmtDate(iso) {
+				if (!iso) return '';
+				try {
+					return new Date(iso).toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' });
+				} catch (_) {
+					return iso;
+				}
+			}
+
+			// 渲染一张 release 卡片（含仓库链接、附件下载/复制、描述展开）
+			function renderReleaseCard(release, isLatest, owner, repo) {
+				const card = el('article', 'release-card');
+
+				const head = el('div', 'release-head');
+
+				// 标签点击跳转该 release 在 GitHub 的页面
+				const tagLink = el('a', 'release-tag release-tag--link', release.tag_name || '');
+				tagLink.href = release.html_url || ('https://github.com/' + owner + '/' + repo + '/releases');
+				tagLink.target = '_blank';
+				tagLink.rel = 'noopener noreferrer';
+				head.appendChild(tagLink);
+
+				if (isLatest) head.appendChild(el('span', 'release-badge', '最新'));
+				if (release.published_at) head.appendChild(el('span', 'release-date', fmtDate(release.published_at)));
+				card.appendChild(head);
+
+				if (release.name && release.name !== release.tag_name) {
+					card.appendChild(el('h3', 'release-name', release.name));
+				}
+
+				// 描述：默认截断，超过阈值可展开/收起
+				const bodyRaw = (release.body || '').trim();
+				const TRUNCATE = 220;
+				const bodyEl = el('p', 'release-body', bodyRaw ? bodyRaw : '（无描述）');
+				if (bodyRaw && bodyRaw.length > TRUNCATE) {
+					bodyEl.classList.add('is-truncated');
+					bodyEl.setAttribute('data-full', bodyRaw);
+					bodyEl.textContent = bodyRaw.slice(0, TRUNCATE) + '…';
+					const toggle = el('button', 'release-body-toggle', '展开');
+					toggle.type = 'button';
+					toggle.setAttribute('aria-expanded', 'false');
+					toggle.addEventListener('click', function () {
+						const expanded = toggle.getAttribute('aria-expanded') === 'true';
+						if (expanded) {
+							bodyEl.classList.add('is-truncated');
+							bodyEl.textContent = bodyRaw.slice(0, TRUNCATE) + '…';
+							toggle.textContent = '展开';
+							toggle.setAttribute('aria-expanded', 'false');
+						} else {
+							bodyEl.classList.remove('is-truncated');
+							bodyEl.textContent = bodyRaw;
+							toggle.textContent = '收起';
+							toggle.setAttribute('aria-expanded', 'true');
+						}
+					});
+					card.appendChild(bodyEl);
+					card.appendChild(toggle);
+				} else {
+					card.appendChild(bodyEl);
+				}
+
+				const assets = Array.isArray(release.assets) ? release.assets : [];
+				if (assets.length) {
+					const list = el('ul', 'asset-list');
+					assets.forEach(function (asset) {
+						const item = el('li', 'asset-item');
+						const name = el('span', 'asset-name', asset.name || '');
+						name.title = asset.name || '';
+						item.appendChild(name);
+						const size = fmtSize(asset.size);
+						if (size) item.appendChild(el('span', 'asset-size', size));
+
+						if (asset.browser_download_url) {
+							const actions = el('span', 'asset-actions');
+							// 复制加速链接
+							const copyBtn = el('button', 'asset-mini-btn', '复制链接');
+							copyBtn.type = 'button';
+							copyBtn.setAttribute('aria-label', '复制 ' + asset.name + ' 的加速链接');
+							copyBtn.addEventListener('click', function () {
+								copyToClipboard('?url=' + encodeURIComponent(asset.browser_download_url), copyBtn);
+							});
+							actions.appendChild(copyBtn);
+							// 加速下载
+							const dlBtn = el('a', 'asset-btn', '下载');
+							dlBtn.href = '?url=' + encodeURIComponent(asset.browser_download_url);
+							dlBtn.setAttribute('aria-label', '加速下载 ' + asset.name);
+							actions.appendChild(dlBtn);
+							item.appendChild(actions);
+						}
+						list.appendChild(item);
+					});
+					card.appendChild(list);
+				} else if (release.zipball_url || release.tarball_url) {
+					// 无附件但有源码包：提供源码下载入口，保证每个 release 至少可下载
+					const list = el('ul', 'asset-list');
+					const item = el('li', 'asset-item');
+					item.appendChild(el('span', 'asset-name', 'Source code (zip)'));
+					const actions = el('span', 'asset-actions');
+					const dlBtn = el('a', 'asset-btn', '下载');
+					dlBtn.href = '?url=' + encodeURIComponent(release.zipball_url || release.tarball_url);
+					dlBtn.setAttribute('aria-label', '加速下载源码包');
+					actions.appendChild(dlBtn);
+					item.appendChild(actions);
+					list.appendChild(item);
+					card.appendChild(list);
+				} else {
+					card.appendChild(el('p', 'asset-empty', '（无附件）'));
+				}
+				return card;
+			}
+
+			// 复制到剪贴板，成功/失败反馈到按钮文案
+			function copyToClipboard(text, btn) {
+				const fallback = function () {
+					// 旧浏览器兜底
+					const ta = document.createElement('textarea');
+					ta.value = text;
+					ta.style.position = 'fixed';
+					ta.style.opacity = '0';
+					document.body.appendChild(ta);
+					ta.select();
+					try { document.execCommand('copy'); } catch (_) {}
+					document.body.removeChild(ta);
+					return true;
+				};
+				const done = function (ok) {
+					const original = btn.textContent;
+					btn.textContent = ok ? '已复制 ✓' : '复制失败';
+					btn.classList.add(ok ? 'is-copied' : 'is-error');
+					setTimeout(function () {
+						btn.textContent = original;
+						btn.classList.remove('is-copied', 'is-error');
+					}, 1600);
+				};
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallback()); });
+				} else {
+					done(fallback());
+				}
+			}
+
+			// 骨架屏加载态
+			function renderSkeleton(box) {
+				box.textContent = '';
+				// 顶部放进度占位（分页拉取期间更新为「第 x 页」）
+				box.appendChild(el('p', 'release-progress', '正在拉取 Release…'));
+				for (let i = 0; i < 3; i++) {
+					const s = el('div', 'skeleton-card');
+					s.appendChild(el('div', 'skeleton-line skeleton-line--short'));
+					s.appendChild(el('div', 'skeleton-line'));
+					s.appendChild(el('div', 'skeleton-line skeleton-line--med'));
+					box.appendChild(s);
+				}
+			}
+
+			// 分页拉取该仓库的全部 Release（per_page=100 循环翻页直到取空）
+			async function fetchAllReleases(owner, repo, my, signal, progressFn) {
+				const enc = encodeURIComponent;
+				const base = 'api.github.com/repos/' + owner + '/' + repo + '/releases?per_page=' + PER_PAGE;
+				let page = 1;
+				let all = [];
+				while (true) {
+					const url = '?url=' + enc(base + '&page=' + page);
+					let res;
+					try {
+						res = await fetch(url, { signal: signal });
+					} catch (err) {
+						if (err && err.name === 'AbortError') return { aborted: true };
+						if (my !== reqSeq) return { error: true };
+						return { error: '网络异常，请检查连接后重试' };
+					}
+					if (my !== reqSeq) return { error: true };
+					if (signal && signal.aborted) return { aborted: true };
+
+					if (res.status === 404) return { error: '仓库不存在或无权访问（404）' };
+					if (res.status === 403) return { error: 'GitHub API 限流（403）：当前出口已达未认证限额 60 次/小时，请稍后再试' };
+					if (!res.ok) return { error: '获取失败（HTTP ' + res.status + '）' };
+
+					let batch;
+					try {
+						batch = await res.json();
+						if (!Array.isArray(batch)) throw new Error('unexpected payload');
+					} catch (_) {
+						if (my !== reqSeq) return { error: true };
+						return { error: '响应解析失败，请稍后重试' };
+					}
+					if (my !== reqSeq) return { error: true };
+					if (signal && signal.aborted) return { aborted: true };
+
+					all = all.concat(batch);
+					if (progressFn) progressFn(page);
+					// 该页不足 per_page 说明已是最后一页
+					if (batch.length < PER_PAGE) break;
+					page++;
+					if (page > MAX_PAGE) break; // 安全上限
+				}
+				return { list: all };
+			}
+
+			// 分批渐进渲染列表，避免一次性插入大量 DOM 阻塞主线程
+			function renderInBatches(box, list, latestTag, owner, repo, my, note) {
+				box.textContent = '';
+				if (note) box.appendChild(el('p', 'release-note', note));
+
+				if (!list.length) {
+					box.appendChild(el('p', 'release-empty', '该仓库暂无 release'));
+					return;
+				}
+
+				// 计数行先占位，渲染完更新
+				const countEl = el('p', 'release-count', '正在渲染 0 / ' + list.length + ' 个 Release…');
+				box.appendChild(countEl);
+
+				let i = 0;
+				(function nextBatch() {
+					if (my !== reqSeq) return; // 已被新查询取代
+					const end = Math.min(i + RENDER_BATCH, list.length);
+					// 用 DocumentFragment 减少回流
+					const frag = document.createDocumentFragment();
+					for (; i < end; i++) {
+						frag.appendChild(renderReleaseCard(list[i], list[i].tag_name === latestTag, owner, repo));
+					}
+					// 卡片插在计数行之前
+					box.insertBefore(frag, countEl);
+					countEl.textContent = '已渲染 ' + end + ' / ' + list.length + ' 个 Release';
+					if (end < list.length) {
+						setTimeout(nextBatch, 0); // 让出主线程，避免长任务阻塞
+					} else {
+						countEl.textContent = '共 ' + list.length + ' 个 Release';
+					}
+				})();
+			}
+
+			async function queryReleases(owner, repo) {
+				const my = ++reqSeq;
+				const signal = newAbort();
+				setReleaseMode(true);
+				renderSkeleton(releaseResults);
+
+				// latest 并行拉取（失败不拖垮，随 signal 取消）
+				const latestUrl = '?url=' + encodeURIComponent('api.github.com/repos/' + owner + '/' + repo + '/releases/latest');
+				const latestP = fetch(latestUrl, { signal: signal }).then(function (r) {
+					if (!r.ok) return null;
+					return r.json().catch(function () { return null; });
+				}).catch(function () { return null; });
+
+				const { list, error, aborted } = await fetchAllReleases(owner, repo, my, signal, function (page) {
+					if (my !== reqSeq) return;
+					// 实时进度：替换骨架屏下方的进度提示（若列表区只剩骨架则插入）
+					const loading = releaseResults.querySelector('.release-progress');
+					if (loading) {
+						loading.textContent = '正在拉取 Release… 第 ' + page + ' 页';
+					}
+				});
+
+				if (my !== reqSeq) return;
+				if (aborted) return; // 已被取消，静默返回
+				if (error) {
+					if (error === true) return;
+					releaseResults.textContent = '';
+					showError(error);
+					return;
+				}
+
+				const latest = await latestP;
+				if (my !== reqSeq) return;
+
+				// 兜底标记「最新」
+				let note = null;
+				let latestTag = latest && latest.tag_name ? latest.tag_name : null;
+				if (!latestTag) {
+					const fallback = list.find(function (r) { return !r.draft && !r.prerelease; });
+					if (fallback) {
+						latestTag = fallback.tag_name;
+					} else if (list.length) {
+						note = '该仓库暂无正式 release（最新版不可用）';
+					}
+				}
+
+				// 按 published_at 降序
+				list.sort(function (a, b) {
+					return (b.published_at || '').localeCompare(a.published_at || '');
+				});
+
+				renderInBatches(releaseResults, list, latestTag, owner, repo, my, note);
+				// aria-live 播报完成结果
+				releaseResults.setAttribute('aria-live', 'polite');
+				releaseResults.setAttribute('aria-busy', 'false');
+			}
+		})();
 	</script>
 </body>
 </html>

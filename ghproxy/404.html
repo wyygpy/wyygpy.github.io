@@ -10,36 +10,42 @@
 	<link rel="shortcut icon" href="favicon.ico">
 	<style>
 		/* ============================================================
-		   Design Tokens — 与 index.html 完全一致
+		   Design Tokens — 与 index.html 完全一致（深空加速器 v2）
 		   ============================================================ */
 		:root {
-			--bg-base: #0a0d14;
+			/* 色彩 —— 表面层 */
+			--bg-base: #080b12;
 			--bg-elevated: #0d1117;
 			--surface-glass: rgba(22, 27, 38, 0.55);
-			--surface-glass-strong: rgba(22, 27, 38, 0.78);
-			--border-subtle: rgba(255, 255, 255, 0.08);
-			--border-strong: rgba(255, 255, 255, 0.14);
+			--surface-glass-strong: rgba(26, 32, 46, 0.82);
+			--border-subtle: rgba(255, 255, 255, 0.09);
+			--border-strong: rgba(255, 255, 255, 0.16);
 
-			--text-primary: #f0f6fc;
+			/* 色彩 —— 文本 */
+			--text-primary: #f2f6fc;
 			--text-secondary: #c9d1d9;
 			--text-muted: #8b949e;
 			--text-faint: #6e7681;
 
+			/* 色彩 —— 强调 */
 			--accent: #58a6ff;
 			--accent-hover: #79b8ff;
-			--accent-deep: #4080ff;
-			--accent-glow: rgba(88, 166, 255, 0.18);
+			--accent-deep: #4078ff;
+			--accent-glow: rgba(88, 166, 255, 0.22);
 			--accent-soft: rgba(88, 166, 255, 0.12);
 
+			/* 语义色 */
 			--success: #3fb950;
 			--warning: #d29922;
 			--danger: #f85149;
 			--info: #58a6ff;
 
+			/* 字体 */
 			--font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
 				Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
 			--font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
 
+			/* 字号刻度 */
 			--fs-xs: 0.75rem;
 			--fs-sm: 0.875rem;
 			--fs-base: 1rem;
@@ -49,6 +55,7 @@
 			--fs-3xl: 2.5rem;
 			--fs-4xl: 3.5rem;
 
+			/* 间距（8px 基准） */
 			--space-1: 0.25rem;
 			--space-2: 0.5rem;
 			--space-3: 0.75rem;
@@ -59,17 +66,20 @@
 			--space-10: 2.5rem;
 			--space-12: 3rem;
 
-		--radius-sm: 8px;
-		--radius-md: 12px;
-		--radius-lg: 16px;
-		--radius-pill: 999px;
+			/* 圆角 */
+			--radius-sm: 8px;
+			--radius-md: 12px;
+			--radius-lg: 16px;
+			--radius-pill: 999px;
 
-		--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-		--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-		--shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45);
-		--shadow-glow: 0 0 0 4px var(--accent-glow);
+			/* 阴影 */
+			--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+			--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.38);
+			--shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
+			--shadow-glow: 0 0 0 4px var(--accent-glow);
 
-		--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+			/* 过渡 */
+			--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 			--transition-fast: 160ms var(--ease-out);
 			--transition-base: 280ms var(--ease-out);
 		}
@@ -89,10 +99,14 @@
 			color: var(--text-primary);
 			min-height: 100vh;
 			background-color: var(--bg-base);
+			/* 与首页一致的环境光 + 网格，但以错误红为主色调 */
 			background-image:
-				radial-gradient(ellipse 80% 60% at 20% 0%, rgba(248, 81, 73, 0.10), transparent 60%),
-				radial-gradient(ellipse 70% 50% at 85% 15%, rgba(88, 166, 255, 0.08), transparent 55%),
-				radial-gradient(ellipse 90% 70% at 50% 100%, rgba(63, 185, 80, 0.05), transparent 60%);
+				linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+				radial-gradient(ellipse 70% 55% at 22% -5%, rgba(248, 81, 73, 0.12), transparent 62%),
+				radial-gradient(ellipse 60% 45% at 88% 12%, rgba(88, 166, 255, 0.10), transparent 55%),
+				radial-gradient(ellipse 90% 65% at 50% 108%, rgba(63, 185, 80, 0.05), transparent 62%);
+			background-size: 44px 44px, 44px 44px, auto, auto, auto;
 			background-attachment: fixed;
 			display: flex;
 			flex-direction: column;
@@ -104,7 +118,7 @@
 
 		.container {
 			width: 100%;
-			max-width: 720px;
+			max-width: 760px;
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-8);
@@ -116,6 +130,7 @@
 		   ============================================================ */
 		.error-header {
 			text-align: center;
+			padding-top: var(--space-4);
 		}
 
 		.error-code {
@@ -127,7 +142,8 @@
 			-webkit-background-clip: text;
 			background-clip: text;
 			-webkit-text-fill-color: transparent;
-			margin-bottom: var(--space-3);
+			margin-bottom: var(--space-4);
+			filter: drop-shadow(0 8px 24px rgba(248, 81, 73, 0.2));
 		}
 
 		.error-title {
@@ -137,7 +153,7 @@
 			font-size: var(--fs-xl);
 			font-weight: 600;
 			color: var(--text-secondary);
-			margin-bottom: var(--space-5);
+			margin-bottom: var(--space-6);
 		}
 
 		.code-label {
@@ -194,9 +210,9 @@
 			border-radius: var(--radius-lg);
 			backdrop-filter: blur(14px);
 			-webkit-backdrop-filter: blur(14px);
-			box-shadow: var(--shadow-sm);
+			box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 			text-align: center;
-			transition: transform var(--transition-base), box-shadow var(--transition-base);
+			transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
 		}
 
 		.status-card:hover {
@@ -205,7 +221,7 @@
 		}
 
 		.status-card.is-error {
-			border-color: rgba(248, 81, 73, 0.25);
+			border-color: rgba(248, 81, 73, 0.28);
 		}
 
 		.status-icon {
@@ -214,20 +230,22 @@
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
-			border-radius: var(--radius-pill);
+			border-radius: 14px;
 			flex-shrink: 0;
 		}
 
 		.status-icon--ok {
 			background: rgba(63, 185, 80, 0.14);
-			border: 1px solid rgba(63, 185, 80, 0.3);
+			border: 1px solid rgba(63, 185, 80, 0.32);
 			color: var(--success);
+			box-shadow: 0 0 16px rgba(63, 185, 80, 0.15);
 		}
 
 		.status-icon--err {
 			background: rgba(248, 81, 73, 0.14);
-			border: 1px solid rgba(248, 81, 73, 0.3);
+			border: 1px solid rgba(248, 81, 73, 0.32);
 			color: var(--danger);
+			box-shadow: 0 0 16px rgba(248, 81, 73, 0.15);
 		}
 
 		.status-name {
@@ -270,6 +288,12 @@
 			border-radius: var(--radius-lg);
 			backdrop-filter: blur(12px);
 			-webkit-backdrop-filter: blur(12px);
+			box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+			transition: border-color var(--transition-base);
+		}
+
+		.explain-card:hover {
+			border-color: rgba(88, 166, 255, 0.18);
 		}
 
 		.explain-card h2 {
