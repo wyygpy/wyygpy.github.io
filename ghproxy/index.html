@@ -1058,6 +1058,8 @@
 		//   1) 加速下载（核心，常驻）：粘贴 GitHub 链接 → 下载图标提交 → ?url= 代理
 		//   2) Release 列表（可选）：开启 Release 后下载图标切换为「获取列表」→ 分页拉取
 		// 主按钮槽位互斥：加速图标 与 获取列表 只显示其一
+		// 模式切换只由显式操作触发（Release 开关 / 「获取列表」按钮）：
+		//   Release 关闭时点「加速下载」严格只做加速，仓库形态输入报错引导，不自动拉起列表
 		// 数据源为 GitHub API 原始 JSON；一切用户可控字段用 textContent 渲染，禁止 innerHTML
 		// 优化：AbortController 取消、分批渐进渲染、骨架屏 + 进度、aria-live 播报
 		// ============================================================
@@ -1141,8 +1143,10 @@
 				queryReleases(parsed.owner, parsed.repo);
 			});
 
-			// 表单提交（Enter 键）：跟随当前模式
-			//  - Release 关闭（主按钮=加速图标）：优先加速链接，否则按仓库查列表
+			// 表单提交（Enter 键 / 点击主按钮）：跟随当前模式
+			//  - Release 关闭（主按钮=加速图标）：严格只做加速——可加速链接走 ?url=；
+			//    仓库形态输入（user/repo 等）报错引导开启 Release 开关，
+			//    不自动切回列表模式（修复：取消 Release 后点下载仍拉取列表的缺陷）
 			//  - Release 开启（主按钮=获取列表）：按仓库查列表
 			form.addEventListener('submit', function (e) {
 				e.preventDefault();
@@ -1156,14 +1160,21 @@
 						window.location.href = accel;
 						return;
 					}
-				}
-				// 列表模式 / 无链接形态：按仓库查询 Release 列表
-				const parsed = parseRepo(input.value);
-				if (!parsed) {
-					showError('粘贴 GitHub 链接可加速下载；或输入仓库（user/repo）查看 Release 列表');
+					// 严格下载模式：不自动开启 Release，引导用户显式操作
+					const parsed = parseRepo(input.value);
+					if (parsed) {
+						showError('已识别仓库 ' + parsed.owner + '/' + parsed.repo + '：如需查看 Release 列表，请先开启「Release」开关');
+					} else {
+						showError('粘贴 GitHub 链接可加速下载；或输入仓库（user/repo）后开启「Release」开关查看列表');
+					}
 					return;
 				}
-				setReleaseMode(true);
+				// 列表模式：按仓库查询 Release 列表
+				const parsed = parseRepo(input.value);
+				if (!parsed) {
+					showError('请输入 GitHub 仓库，如 user/repo 或 github.com/user/repo');
+					return;
+				}
 				queryReleases(parsed.owner, parsed.repo);
 			});
 
