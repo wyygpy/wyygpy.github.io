@@ -723,6 +723,33 @@
 			border-radius: 4px;
 		}
 
+		/* 列表折叠：默认仅展示前 5 个 Release，其余隐藏，由底部按钮切换 */
+		.release-card.is-folded { display: none; }
+		.release-results.is-expanded .release-card.is-folded { display: flex; }
+
+		.release-fold-toggle {
+			align-self: center;
+			border: 1px solid var(--border-subtle);
+			background: var(--surface-glass);
+			color: var(--accent);
+			font-size: var(--fs-sm);
+			font-weight: 600;
+			font-family: var(--font-sans);
+			cursor: pointer;
+			padding: var(--space-2) var(--space-4);
+			border-radius: 999px;
+		}
+
+		.release-fold-toggle:hover {
+			color: var(--accent-hover);
+			border-color: var(--border-strong);
+		}
+
+		.release-fold-toggle:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 2px;
+		}
+
 		.asset-list {
 			list-style: none;
 			display: flex;
@@ -1076,6 +1103,8 @@
 
 			// 渲染批次大小：每批插入的卡片数（降低 DOM 峰值与主线程阻塞）
 			const RENDER_BATCH = 20;
+			// 列表折叠阈值：默认仅展示前 N 个 Release，其余折叠（底部按钮切换）
+			const INITIAL_VISIBLE = 5;
 			// 单页拉取条数（GitHub API 上限 100）
 			const PER_PAGE = 100;
 			// 分页安全上限：最多 20 页（2000 条）
@@ -1398,7 +1427,22 @@
 					if (signal && signal.aborted) return { aborted: true };
 
 					if (res.status === 404) return { error: '仓库不存在或无权访问（404）' };
-					if (res.status === 403) return { error: 'GitHub API 限流（403）：当前出口已达未认证限额 60 次/小时，请稍后再试' };
+					if (res.status === 403) {
+						// 限流 403 与无权 403 区分：GitHub 限流时 x-ratelimit-remaining 为 0，
+						// reset 为配额重置的 Unix 秒级时间戳（worker 透传上游头，同源可读）
+						if (res.headers.get('x-ratelimit-remaining') === '0') {
+							const reset = Number(res.headers.get('x-ratelimit-reset'));
+							let msg = 'GitHub API 限流（403）：出口配额已耗尽';
+							if (reset > 0) {
+								try {
+									msg += '，约 ' + new Date(reset * 1000).toLocaleTimeString('zh-CN', { hour12: false }) + ' 重置';
+								} catch (_) { /* 时间戳异常时省略 */ }
+							}
+							msg += '。若为本站管理员，可配置 GITHUB_TOKEN 环境变量提升至 5000 次/时';
+							return { error: msg };
+						}
+						return { error: '访问被拒绝（403）：仓库可能为私有或受限' };
+					}
 					if (!res.ok) return { error: '获取失败（HTTP ' + res.status + '）' };
 
 					let batch;
@@ -1443,7 +1487,10 @@
 					// 用 DocumentFragment 减少回流
 					const frag = document.createDocumentFragment();
 					for (; i < end; i++) {
-						frag.appendChild(renderReleaseCard(list[i], list[i].tag_name === latestTag, owner, repo));
+						const card = renderReleaseCard(list[i], list[i].tag_name === latestTag, owner, repo);
+						// 超过折叠阈值的卡片默认隐藏（CSS .is-folded），由底部按钮切换
+						if (i >= INITIAL_VISIBLE) card.classList.add('is-folded');
+						frag.appendChild(card);
 					}
 					// 卡片插在计数行之前
 					box.insertBefore(frag, countEl);
@@ -1454,6 +1501,19 @@
 						countEl.textContent = '共 ' + list.length + ' 个 Release';
 					}
 				})();
+
+				// 列表折叠切换：仅当折叠数量 > 0 时出现；纯视觉操作，新查询重绘时随容器清空，无竞态
+				if (list.length > INITIAL_VISIBLE) {
+					const foldBtn = el('button', 'release-fold-toggle', '展开其余 ' + (list.length - INITIAL_VISIBLE) + ' 个 Release');
+					foldBtn.type = 'button';
+					foldBtn.setAttribute('aria-expanded', 'false');
+					foldBtn.addEventListener('click', function () {
+						const expanded = box.classList.toggle('is-expanded');
+						foldBtn.textContent = expanded ? '收起' : '展开其余 ' + (list.length - INITIAL_VISIBLE) + ' 个 Release';
+						foldBtn.setAttribute('aria-expanded', String(expanded));
+					});
+					box.appendChild(foldBtn);
+				}
 			}
 
 			async function queryReleases(owner, repo) {
